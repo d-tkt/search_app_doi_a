@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}商品{% if product.id %}編集{% else %}作成{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2 class="text-center mb-4">商品{% if product.id %}編集{% else %}作成{% endif %}</h2>
+    <form method="POST" class="bg-light p-4 rounded shadow-sm">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+            <small class="form-text text-muted">{{ field.help_text }}</small>
+          {% endif %}
+          {% for error in field.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="d-flex justify-content-between mt-3">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{% url 'search' %}" class="btn btn-secondary">最初の画面に戻る</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

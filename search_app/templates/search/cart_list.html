@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}カートリスト{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">カートリスト</h1>
+    {% if cart_items %}
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th scope="col">商品名</th>
+                    <th scope="col" style="text-align: right;">価格</th>
+                    <th scope="col" style="text-align: right;">数量</th>
+                    <th scope="col" style="text-align: right;">削除</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td style="text-align: right;">{{ item.product.price|floatformat:0 }} 円</td>
+                        <td style="text-align: right;">
+                            <a href="{% url 'add_to_cart' item.product.id %}" style="color: lightblue; text-decoration: none;">◁</a> 
+                            {{ item.quantity }}  
+                            <a href="{% url 'remove_one_from_cart' item.product.id %}" style="color: lightblue; text-decoration: none;">▷</a>
+                        </td>
+                        <td style="text-align: right;">
+                            <form action="{% url 'remove_from_cart' item.product.id %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="text-right">
+            <h3 style="text-align: right;">合計: {{ total_quantity }} 点 {{ total_price|floatformat:0 }} 円</h3>
+        </div>
+    {% else %}
+        <p class="text-center">カートは空です。</p>
+    {% endif %}
+</div>
+{% endblock %}
+

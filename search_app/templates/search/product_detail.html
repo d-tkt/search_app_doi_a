@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ product.name }}の詳細{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h1 class="text-center mb-4">{{ product.name }}の詳細</h1>
+    
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title">{{ product.name }}</h2>
+        <p class="card-text">{{ product.description }}</p>
+        <p class="card-text"><strong>{{ product.price|floatformat:0|intcomma }}円</strong></p>
+        
+        {% if cart_quantity > 0 %}
+            <p class="alert alert-info">カートに追加済み: {{ cart_quantity }}</p>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between mt-4">
+          {% if user.is_superuser %}
+          <a href="{% url 'product_update' product.pk %}" class="btn btn-secondary">編集</a>
+          <form action="{% url 'product_delete' product.pk %}" method="POST" onsubmit="return confirm('本当に削除しますか？');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">削除</button>
+          </form>
+          {% endif %}
+          {% if not user.is_superuser %}
+              <form action="{% url 'toggle_favorite' product.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn {% if is_favorite %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                      {% if is_favorite %}お気に入りから削除{% else %}お気に入りに追加{% endif %}
+                  </button>
+              </form>
+              <form action="{% url 'add_to_cart' product.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-primary">カートに追加</button>
+              </form>
+          {% endif %}
+          <a href="{% url 'search' %}" class="btn btn-primary">戻る</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

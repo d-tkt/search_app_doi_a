@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}新規商品追加{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">新規商品追加</h1>
+<form action="{% url 'product_create' %}" method="post">
+    {% csrf_token %}
+    <!-- フォームの内容 -->
+    <button type="submit" class="btn btn-primary">追加</button>
+</form>
+{% endblock %}

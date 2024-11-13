@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}製品検索{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-badge {
+        text-decoration: none;
+        color: white !important; /* !important を使用して他のスタイルより優先させる */
+    }
+    .category-badge:hover {
+        color: white !important; /* ホバー時も白色を維持 */
+        opacity: 0.8; /* オプション：ホバー時に少し透明にする */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<script>
+function submitForm() {
+    var form = document.getElementById('search-form');
+    if (form) {
+        form.submit();
+    } else {
+        console.error('Form not found');
+    }
+}
+
+function clearField(fieldName) {
+    document.getElementById(fieldName).value = '';
+    submitForm();
+}
+
+function clearPrice() {
+    document.getElementById('min_price').value = '';
+    document.getElementById('max_price').value = '';
+    submitForm();
+}
+
+function resetAll() {
+    var form = document.getElementById('search-form');
+    var inputs = form.getElementsByTagName('input');
+    for (var i = 0; i < inputs.length; i++) {
+        if (inputs[i].type != 'submit') {
+            inputs[i].value = '';
+        }
+    }
+    var selects = form.getElementsByTagName('select');
+    for (var i = 0; i < selects.length; i++) {
+        selects[i].selectedIndex = 0;
+    }
+    submitForm();
+}
+
+function changeSort(sortValue) {
+    document.getElementById('sort').value = sortValue;
+    var sortDropdown = document.getElementById('sortDropdown');
+    sortDropdown.textContent = 
+        sortValue === 'name' ? '名前順' :
+        sortValue === 'price_asc' ? '価格低い順' : '価格高い順';
+    submitForm();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var sortDropdown = document.getElementById('sortDropdown');
+    var dropdownMenu = sortDropdown.nextElementSibling;
+
+    sortDropdown.addEventListener('click', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropdownMenu.classList.toggle('show');
+    });
+
+    document.addEventListener('click', function(event) {
+        if (!sortDropdown.contains(event.target)) {
+            dropdownMenu.classList.remove('show');
+        }
+    });
+
+    dropdownMenu.addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+});
+</script>
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">製品検索</h1>
+    <div class="search-container p-4">
+        <form id="search-form" action="{% url 'search' %}" method="get">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="query" class="form-label">検索キーワード:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="query" name="query" value="{{ search_params.query }}" placeholder="検索キーワードを入力">
+                        <button type="button" onclick="clearField('query')" class="btn btn-outline-secondary">クリア</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">価格範囲:</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="min_price" name="min_price" value="{{ search_params.min_price }}" placeholder="最小価格">
+                        <span class="input-group-text">～</span>
+                        <input type="number" class="form-control" id="max_price" name="max_price" value="{{ search_params.max_price }}" placeholder="最大価格">
+                        <button type="button" onclick="clearPrice()" class="btn btn-outline-secondary">クリア</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <button type="submit" class="btn btn-primary me-2">検索</button>
+                <a href="javascript:resetAll()" class="btn btn-secondary">リセット</a>
+            </div>
+
+            {% if page_obj %}
+                <div class="mt-5">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                        <h2>検索結果</h2>
+                        <div class="d-flex flex-wrap align-items-center">
+                            <div class="me-3 mb-2">
+                                <label class="form-label me-2">カテゴリ:</label><br>
+                                <div class="btn-group" role="group" aria-label="カテゴリ選択">
+                                    <input type="radio" class="btn-check" name="category" id="category_all" value="" {% if not search_params.category %}checked{% endif %} onchange="submitForm()" autocomplete="off">
+                                    <label class="btn btn-outline-secondary {% if not search_params.category %}active bg-secondary{% endif %}" for="category_all">すべて</label>
+
+                                    {% for category in categories %}
+                                        {% if category.name != "すべて" %}
+                                            <input type="radio" class="btn-check" name="category" id="category_{{ category.name }}" value="{{ category.name }}" {% if search_params.category == category.name %}checked{% endif %} onchange="submitForm()" autocomplete="off">
+                                            <label class="btn btn-outline-secondary {% if search_params.category == category.name %}active 
+                                                {% if category.name == '本' %}bg-success
+                                                {% elif category.name == '電子機器' %}bg-primary
+                                                {% else %}bg-secondary{% endif %}
+                                                {% endif %}"
+                                                for="category_{{ category.name }}">{{ category.name }}</label>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label for="sort" class="form-label me-2">並び順:</label>
+                                <select class="form-select" id="sort" name="sort" onchange="this.form.submit()">
+                                    <option value="name" {% if search_params.sort == 'name' or not search_params.sort %}selected{% endif %}>名前順</option>
+                                    <option value="price_asc" {% if search_params.sort == 'price_asc' %}selected{% endif %}>価格低い順</option>
+                                    <option value="price_desc" {% if search_params.sort == 'price_desc' %}selected{% endif %}>価格高い順</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-3">
+                    {% for product in page_obj %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">{{ product.name }}</a>
+                                    </h5>
+                                    <p class="card-text text-white">
+                                        <a href="?category={{ product.category.name }}" class="badge 
+                                            {% if product.category.name == '本' %}
+                                                bg-success
+                                            {% elif product.category.name == '電子機器' %}
+                                                bg-primary
+                                            {% else %}
+                                                bg-secondary
+                                            {% endif %}
+                                            text-decoration-none" style="color: inherit;">{{ product.category.name }}</a>
+                                    </p>
+                                    <p class="card-text fs-4 fw-bold text-end">{{ product.price|floatformat:0 }}円</p>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0 d-flex justify-content-between align-items-center">
+                                    <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline-primary btn-sm">詳細を見る</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <p class="alert alert-info">検索条件に一致する製品が見つかりませんでした。</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&query={{ search_params.query }}&category={{ search_params.category }}&min_price={{ search_params.min_price }}&max_price={{ search_params.max_price }}&sort={{ search_params.sort }}">最初</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&query={{ search_params.query }}&category={{ search_params.category }}&min_price={{ search_params.min_price }}&max_price={{ search_params.max_price }}&sort={{ search_params.sort }}">前へ</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&query={{ search_params.query }}&category={{ search_params.category }}&min_price={{ search_params.min_price }}&max_price={{ search_params.max_price }}&sort={{ search_params.sort }}">次へ</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&query={{ search_params.query }}&category={{ search_params.category }}&min_price={{ search_params.min_price }}&max_price={{ search_params.max_price }}&sort={{ search_params.sort }}">最後</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% else %}
+                <div class="mt-5">
+                    <p>検索結果がありません。</p>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<input type="hidden" id="sort" name="sort" value="{{ search_params.sort|default:'name' }}">
+
+{% endblock %}
