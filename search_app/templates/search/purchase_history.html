@@ -19,7 +19,7 @@
         <tbody>
             {% for purchase in purchase_history %}
             <tr>
-                <td><a href="{% url 'product_detail' purchase.product.id %}">{{ purchase.product.name }}</a></td>
+                <td><a href="{% url 'product_detail' purchase.product.id %}" class="text-decoration-none">{{ purchase.product.name }}</a></td>
                 <td>{{ purchase.product.price|floatformat:0 }}円</td>
                 <td>{{ purchase.purchased_at|date:"Y年m月d日 H:i" }}</td>
                 <td>{{ purchase.quantity }}個</td>
