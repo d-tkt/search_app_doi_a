@@ -14,6 +14,10 @@
         <p class="card-text">{{ product.description }}</p>
         <p class="card-text"><strong>{{ product.price|floatformat:0|intcomma }}円</strong></p>
         
+        {% if product.stock < 10 %}
+            <p class="card-text text-danger">※在庫残りわずか</p>
+        {% endif %}
+        
         {% if cart_quantity > 0 %}
             <p class="alert alert-info">カートに追加済み: {{ cart_quantity }}</p>
         {% endif %}
@@ -26,7 +30,7 @@
             <button type="submit" class="btn btn-danger">削除</button>
           </form>
           {% endif %}
-          {% if not user.is_superuser %}
+          {% if user.is_authenticated and not user.is_superuser %}
               <form action="{% url 'toggle_favorite' product.id %}" method="post" style="display:inline;">
                   {% csrf_token %}
                   <button type="submit" class="btn {% if is_favorite %}btn-warning{% else %}btn-outline-warning{% endif %}">

@@ -1,15 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Product, Category, Favorite, CartItem
+from .models import Product, Category, Favorite, CartItem, PurchaseHistory
 from .forms import ProductForm, SearchForm 
 from django.core.paginator import Paginator 
 from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.http import JsonResponse
+from django.contrib import messages
 
-def superuser_check(user):
-    return user.is_superuser
 
-@user_passes_test(superuser_check)
+
+@user_passes_test(lambda u: u.is_superuser)
 def product_create(request): 
     if request.method == 'POST': 
         form = ProductForm(request.POST) 
@@ -38,7 +38,7 @@ def product_detail(request, pk):
         'cart_quantity': cart_quantity,  # カートの数量をコンテキストに追加
     })
 
-@user_passes_test(superuser_check)
+@user_passes_test(lambda u: u.is_superuser)
 def product_update(request, pk): 
     product = get_object_or_404(Product, pk=pk) 
     if request.method == 'POST': 
@@ -50,7 +50,7 @@ def product_update(request, pk):
         form = ProductForm(instance=product) 
     return render(request, 'search/product_form.html', {'form': form, 'product': product})
 
-@user_passes_test(superuser_check)
+@user_passes_test(lambda u: u.is_superuser)
 def product_delete(request, pk): 
     product = get_object_or_404(Product, pk=pk) 
     if request.method == 'POST': 
@@ -58,10 +58,19 @@ def product_delete(request, pk):
         return redirect('product_list') 
     return render(request, 'search/product_confirm_delete.html', {'product': product}) 
 
-@user_passes_test(superuser_check)
+@user_passes_test(lambda u: u.is_superuser)
 def product_list(request): 
-    products = Product.objects.all() 
-    return render(request, 'search/product_list.html', {'products': products}) 
+    sort_by = request.GET.get('sort_by', 'id')  # デフォルトは商品ID順
+    order = request.GET.get('order', 'asc')  # デフォルトは昇順
+
+    if sort_by == 'stock':
+        products = Product.objects.all().order_by('stock' if order == 'asc' else '-stock')
+    elif sort_by == 'sales_count':
+        products = Product.objects.all().order_by('sales_count' if order == 'asc' else '-sales_count')
+    else:
+        products = Product.objects.all().order_by('id' if order == 'asc' else '-id')
+
+    return render(request, 'search/product_list.html', {'products': products})
 
 def search_view(request):
     # セッションから検索条件を取得または初期化
@@ -188,3 +197,42 @@ def remove_one_from_cart(request, product_id):
     else:
         cart_item.delete()  # 数量が1の場合はアイテムを削除
     return redirect('cart_list')
+
+@login_required
+def purchase_cart(request):
+    cart_items = CartItem.objects.filter(user=request.user)
+    total_quantity = sum(item.quantity for item in cart_items)
+
+    # 在庫不足の商品をリストアップ
+    out_of_stock_items = []
+    for item in cart_items:
+        if item.quantity > item.product.stock:
+            out_of_stock_items.append(item.product.name)
+
+    if out_of_stock_items:
+        # 在庫不足のメッセージを作成
+        out_of_stock_message = f"以下の商品は在庫が不足しています: 「{'」「'.join(out_of_stock_items)}」入荷をお待ちください。"
+        messages.error(request, out_of_stock_message)
+        return redirect('cart_list')
+
+    for item in cart_items:
+        # 購入履歴の作成
+        PurchaseHistory.objects.create(
+            user=request.user,
+            product=item.product,
+            quantity=item.quantity
+        )
+        # 在庫と販売数の更新
+        item.product.stock -= item.quantity
+        item.product.sales_count += item.quantity
+        item.product.save()
+
+    # カートを空にする
+    cart_items.delete()
+    messages.success(request, "購入が完了しました。")
+    return redirect('cart_list')
+
+@login_required
+def purchase_history(request):
+    purchase_history = PurchaseHistory.objects.filter(user=request.user).select_related('product')
+    return render(request, 'search/purchase_history.html', {'purchase_history': purchase_history})
