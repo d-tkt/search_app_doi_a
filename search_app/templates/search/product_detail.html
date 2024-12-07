@@ -13,6 +13,15 @@
         <h2 class="card-title">{{ product.name }}</h2>
         <p class="card-text">{{ product.description }}</p>
         <p class="card-text"><strong>{{ product.price|floatformat:0|intcomma }}円</strong></p>
+
+        {% if user.is_superuser %}
+        <p class="card-text">在庫: {{ product.stock }}</p>
+        <p class="card-text">自動更新: {{ product.auto_restock|yesno:"オン,オフ" }}</p>
+        {% if product.auto_restock %}
+        <p class="card-text">自動更新ライン: {{ product.restock_threshold }}</p>
+        <p class="card-text">自動更新量: {{ product.restock_amount }}</p>
+        {% endif %}
+        {% endif %}
         
         {% if product.stock < 10 %}
             <p class="card-text text-danger">※在庫残りわずか</p>

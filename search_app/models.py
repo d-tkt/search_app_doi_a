@@ -15,7 +15,12 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, default=1)  # 1はカテゴリID
     stock = models.PositiveIntegerField(default=0)  # 在庫
     sales_count = models.PositiveIntegerField(default=0)  # 販売数
- 
+
+    # 新しいフィールド
+    auto_restock = models.BooleanField(default=False)  # 在庫の自動更新のon/off
+    restock_threshold = models.PositiveIntegerField(default=10)  # 自動更新を行うライン
+    restock_amount = models.PositiveIntegerField(default=100)  # 自動更新する量
+
     def __str__(self): 
         return self.name
 

@@ -40,6 +40,7 @@
                 <th>カテゴリ</th>
                 <th>在庫</th>
                 <th>販売数</th>
+                <th>自動更新</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -51,6 +52,9 @@
                 <td>{{ product.category.name }}</td>
                 <td>{{ product.stock }}</td>
                 <td>{{ product.sales_count }}</td>
+                <td>
+                    <input type="checkbox" class="form-check-input" {% if product.auto_restock %}checked{% endif %} onchange="toggleAutoRestock('{{ product.id }}', this.checked, '{{ product.name }}');">
+                </td>
                 <td>
                     {% if user.is_superuser %}
                     <a href="{% url 'product_update' product.id %}" class="btn btn-sm btn-primary me-1">編集</a>
@@ -76,6 +80,27 @@
 <script>
 function submitForm() {
     document.getElementById('sort-form').submit();
+}
+
+function toggleAutoRestock(productId, isChecked, productName) {
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('auto_restock', isChecked);
+
+    fetch("{% url 'toggle_auto_restock' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    }).then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              alert(`「${productName}」の自動更新の状態が更新されました。`);
+          } else {
+              alert('更新に失敗しました。');
+          }
+      });
 }
 </script>
 

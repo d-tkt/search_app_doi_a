@@ -12,5 +12,5 @@ class SearchForm(forms.Form):
 class ProductForm(forms.ModelForm): 
     class Meta: 
         model = Product 
-        fields = ['name', 'description', 'price', 'category', 'stock']
+        fields = ['name', 'description', 'price', 'category', 'stock', 'auto_restock', 'restock_threshold', 'restock_amount']
 

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'search_app',
     'accounts',
     'widget_tweaks',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -128,3 +129,15 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 LOGIN_REDIRECT_URL = 'search'  # または適切なURL名
 LOGIN_URL = 'login'
+
+# Celery設定
+from celery.schedules import crontab
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redisをブローカーとして使用する場合
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BEAT_SCHEDULE = {
+    'auto_restock_products': {
+        'task': 'search_app.tasks.auto_restock_products',
+        'schedule': crontab()  # execute every minute
+    }
+}

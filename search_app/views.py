@@ -6,6 +6,9 @@ from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.http import JsonResponse
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from .tasks import auto_restock_products
+from django.views.decorators.http import require_POST
 
 
 
@@ -236,3 +239,23 @@ def purchase_cart(request):
 def purchase_history(request):
     purchase_history = PurchaseHistory.objects.filter(user=request.user).select_related('product')
     return render(request, 'search/purchase_history.html', {'purchase_history': purchase_history})
+
+
+def manual_restock(request):
+    auto_restock_products.delay()  # Celeryタスクを非同期で実行
+    messages.success(request, "在庫の自動更新が完了しました。")
+    return redirect('product_list')
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def toggle_auto_restock(request):
+    print("==1")
+    product_id = request.POST.get('product_id')
+    print(f"=={product_id}")
+    auto_restock = request.POST.get('auto_restock') == 'true'
+    
+    product = get_object_or_404(Product, id=product_id)
+    product.auto_restock = auto_restock
+    product.save()
+    
+    return JsonResponse({'success': True})

@@ -17,4 +17,6 @@ urlpatterns = [
     path('remove_one_from_cart/<int:product_id>/', views.remove_one_from_cart, name='remove_one_from_cart'),
     path('cart/purchase/', views.purchase_cart, name='purchase_cart'),
     path('purchase_history/', views.purchase_history, name='purchase_history'),
+    path('manual_restock/', views.manual_restock, name='manual_restock'),
+    path('toggle_auto_restock/', views.toggle_auto_restock, name='toggle_auto_restock'),
 ]
